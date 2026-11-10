@@ -1,0 +1,57 @@
+{
+  "name": "fast-elementplus-components",
+  "version": "1.0.2",
+  "description": "Vue 3 components built on Element Plus",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": ["**/*.css", "**/*.scss"],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.umd.js"
+    },
+    "./menu": {
+      "types": "./dist/menu/index.d.ts",
+      "development": "./src/menu/index.ts",
+      "import": "./dist/menu/index.mjs",
+      "require": "./dist/menu/index.umd.js"
+    },
+    "./style.css": {
+      "development": "./src/styles/index.scss",
+      "default": "./dist/style.css"
+    },
+    "./menu/style.css": {
+      "development": "./src/menu/src/styles/index.scss",
+      "default": "./dist/menu/style.css"
+    }
+  },
+  "scripts": {
+    "build": "node ./command/build.js && vue-tsc -p tsconfig.build.json && node ./command/clean-types.js",
+    "type-check": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1"
+  },
+  "peerDependencies": {
+    "element-plus": "^2.6.1",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.25",
+    "@vitejs/plugin-vue": "^5.0.4",
+    "@vitejs/plugin-vue-jsx": "^3.1.0",
+    "element-plus": "^2.6.1",
+    "fs-extra": "^11.2.0",
+    "sass": "^1.72.0",
+    "typescript": "^5.4.3",
+    "vite": "^5.1.5",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "vue-tsc": "^2.0.6"
+  }
+}

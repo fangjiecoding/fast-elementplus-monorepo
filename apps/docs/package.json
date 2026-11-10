@@ -1,0 +1,20 @@
+{
+  "name": "@fast-elementplus/docs",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vitepress dev docs",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "element-plus": "^2.6.3",
+    "fast-elementplus-components": "workspace:*",
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "sass": "^1.72.0",
+    "vitepress": "^1.0.1"
+  }
+}
