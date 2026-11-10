@@ -1,10 +1,16 @@
 import { defineConfig } from "vitepress";
 
+const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1];
+const pagesBase =
+	process.env.GITHUB_ACTIONS === "true" && repositoryName
+		? `/${repositoryName}/`
+		: "/";
+
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
 	title: "fast-elementplus-components",
 	description: "A VitePress Site",
-	base: "/",
+	base: pagesBase,
 	themeConfig: {
 		// https://vitepress.dev/reference/default-theme-config
 		nav: [{ text: "首页", link: "/intro/" }],

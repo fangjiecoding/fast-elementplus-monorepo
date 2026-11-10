@@ -17,6 +17,7 @@
     "preview:docs": "pnpm --filter @fast-elementplus/docs preview",
     "type-check": "pnpm build:components && pnpm -r --if-present type-check",
     "lint": "eslint packages apps --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "lint:check": "eslint packages apps --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --ignore-path .gitignore",
     "format": "prettier --write \"packages/**/*.{ts,tsx,vue,js,json,scss,md}\" \"apps/**/*.{ts,tsx,vue,js,json,scss,md}\" \"*.{json,yaml,md}\" --ignore-path .gitignore"
   },
   "devDependencies": {

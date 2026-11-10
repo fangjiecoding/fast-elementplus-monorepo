@@ -45,6 +45,7 @@ pnpm install
 | `pnpm preview:docs` | 预览文档构建产物 |
 | `pnpm type-check` | 构建组件类型声明并检查组件库和 playground |
 | `pnpm lint` | 检查并自动修复 ESLint 问题 |
+| `pnpm lint:check` | 只检查 ESLint 问题，不修改文件 |
 | `pnpm format` | 使用 Prettier 格式化工作区文件 |
 
 也可以对单个 Workspace 执行命令：
@@ -74,3 +75,27 @@ pnpm --filter @fast-elementplus/docs <script>
 - 组件库：`packages/components/dist`
 - playground：`apps/playground/dist`
 - 文档：`apps/docs/docs/.vitepress/dist`
+
+## 自动发布
+
+`.github/workflows/publish.yml` 在推送到 `main` 时构建并发布三个 Workspace，也支持在 Actions 页面手动运行。
+
+### GitHub Pages
+
+文档发布到站点根路径，playground 发布到 `/playground/`：
+
+```text
+https://<owner>.github.io/<repository>/
+https://<owner>.github.io/<repository>/playground/
+```
+
+首次运行前，在仓库 **Settings → Pages** 中将 **Source** 设置为 **GitHub Actions**。工作流会根据仓库名自动设置 VitePress 和 Vite 的 `base`。
+
+### npm
+
+在仓库 **Settings → Secrets and variables → Actions** 中添加具有组件包发布权限的 `NPM_TOKEN`。
+
+- 推送到 `main` 时，如果 `packages/components/package.json` 中的版本尚未发布到 npm，工作流会自动发布。
+- 如果版本已存在则跳过，不会重复发布；发布新版本前需要先更新 `version`。
+- 手动运行工作流时，可勾选 `publish_npm` 发布当前未发布的版本；不勾选则只更新 Pages。
+- npm 发布与 Pages 部署是两个独立任务，npm 配置或发布失败不会阻止文档和 playground 部署。

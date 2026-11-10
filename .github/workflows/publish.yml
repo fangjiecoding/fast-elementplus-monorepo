@@ -1,0 +1,169 @@
+name: Publish docs, playground and components
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/**'
+      - 'packages/**'
+      - '.github/workflows/publish.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'tsconfig.base.json'
+  workflow_dispatch:
+    inputs:
+      publish_npm:
+        description: Publish components when the current version is not on npm
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build sites and component package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.11.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint workspace
+        run: pnpm lint:check
+
+      - name: Check types and build components
+        run: pnpm type-check
+
+      - name: Build documentation
+        run: pnpm build:docs
+
+      - name: Build playground
+        run: pnpm build:playground
+
+      - name: Combine GitHub Pages sites
+        run: |
+          mkdir -p _site/playground
+          cp -R apps/docs/docs/.vitepress/dist/. _site/
+          cp -R apps/playground/dist/. _site/playground/
+          touch _site/.nojekyll
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Upload component package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: components-${{ github.sha }}
+          path: |
+            packages/components/dist
+            packages/components/package.json
+            packages/components/README.md
+          retention-days: 1
+
+  deploy-pages:
+    name: Deploy docs and playground to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  publish-npm:
+    name: Publish components to npm
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Node.js for npm
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Download component package
+        uses: actions/download-artifact@v4
+        with:
+          name: components-${{ github.sha }}
+          path: packages/components
+
+      - name: Check whether npm publish is required
+        id: npm-check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          REQUEST_NPM_PUBLISH: ${{ github.event_name == 'push' || inputs.publish_npm }}
+        run: |
+          PACKAGE_NAME=$(node -p "require('./packages/components/package.json').name")
+          VERSION=$(node -p "require('./packages/components/package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "$REQUEST_NPM_PUBLISH" != "true" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "npm publish was not requested for this manual run."
+            exit 0
+          fi
+
+          set +e
+          npm view "${PACKAGE_NAME}@${VERSION}" version > "$RUNNER_TEMP/npm-version.out" 2> "$RUNNER_TEMP/npm-version.err"
+          NPM_VIEW_STATUS=$?
+          set -e
+
+          if [ "$NPM_VIEW_STATUS" -eq 0 ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "${PACKAGE_NAME}@${VERSION} is already published; skipping npm."
+            exit 0
+          fi
+
+          if ! grep -q 'E404' "$RUNNER_TEMP/npm-version.err"; then
+            cat "$RUNNER_TEMP/npm-version.err" >&2
+            exit "$NPM_VIEW_STATUS"
+          fi
+
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish new component version
+        if: steps.npm-check.outputs.publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::Add an NPM_TOKEN secret with publish permission before releasing components."
+            exit 1
+          fi
+
+          npm publish ./packages/components --access public
+          echo "Published fast-elementplus-components@${{ steps.npm-check.outputs.version }} to npm." >> "$GITHUB_STEP_SUMMARY"

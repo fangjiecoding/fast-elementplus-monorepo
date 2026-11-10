@@ -1,7 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/',
@@ -31,7 +31,7 @@ const router = createRouter({
         },
         {
           path: '/menu',
-          component: () => import('../views/Home.vue')
+          component: () => import('../views/Menu.vue')
         },
         {
           path: '/chooseTime',
